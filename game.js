@@ -22,6 +22,15 @@ class CRTNeonGame {
         this.gameBoard = []; // 2D array representing the game board
         this.availableMoves = []; // Available moves for current player
         
+        // Gesture tracking
+        this.touchStartTime = 0;
+        this.touchStartPosition = { x: 0, y: 0 };
+        this.touchEndPosition = { x: 0, y: 0 };
+        this.isGestureActive = false;
+        this.gestureType = null; // 'tap', 'swipe', 'pinch'
+        this.initialPinchDistance = 0;
+        this.initialCameraDistance = 0;
+        
         this.init();
         this.setupEventListeners();
         this.animate();
@@ -32,18 +41,27 @@ class CRTNeonGame {
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x000000);
 
+        // Get viewport dimensions with safe area support
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
         // Kreiraj kameru
         this.camera = new THREE.PerspectiveCamera(
             75,
-            window.innerWidth / window.innerHeight,
+            viewportWidth / viewportHeight,
             0.1,
             1000
         );
         this.camera.position.set(0, 10, 10);
 
         // Kreiraj renderer
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer = new THREE.WebGLRenderer({ 
+            antialias: true,
+            powerPreference: "high-performance",
+            alpha: false
+        });
+        this.renderer.setSize(viewportWidth, viewportHeight);
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         document.getElementById('gameContainer').appendChild(this.renderer.domElement);
@@ -54,6 +72,16 @@ class CRTNeonGame {
         this.controls.dampingFactor = 0.05;
         this.controls.enablePan = false; // Disable panning
         this.controls.enableZoom = true; // Keep zoom
+        
+        // Enable touch controls for mobile
+        this.controls.enableRotate = true;
+        this.controls.enableZoom = true;
+        this.controls.enablePan = false;
+        
+        // Touch sensitivity adjustments for mobile
+        this.controls.rotateSpeed = 0.8;
+        this.controls.zoomSpeed = 0.8;
+        this.controls.panSpeed = 0.8;
         
         // Store initial camera position for north orientation
         this.northPosition = null;
@@ -68,6 +96,20 @@ class CRTNeonGame {
         
         this.renderer.domElement.addEventListener('mouseup', (event) => {
             if (event.button === 0) { // Left mouse button
+                this.isRotating = false;
+                this.returnToNorth();
+            }
+        });
+        
+        // Add touch event listeners for auto-return
+        this.renderer.domElement.addEventListener('touchstart', (event) => {
+            if (event.touches.length === 1) { // Single touch for rotation
+                this.isRotating = true;
+            }
+        });
+        
+        this.renderer.domElement.addEventListener('touchend', (event) => {
+            if (event.touches.length === 0) { // No touches left
                 this.isRotating = false;
                 this.returnToNorth();
             }
@@ -900,34 +942,199 @@ class CRTNeonGame {
 
         // Mouse click event for placing tokens
         this.renderer.domElement.addEventListener('click', (event) => {
-            if (this.gameState !== 'playing') return;
+            this.handlePointerEvent(event);
+        });
+
+        // Touch events for mobile devices with gesture support
+        this.renderer.domElement.addEventListener('touchstart', (event) => {
+            event.preventDefault();
+            this.handleTouchStart(event);
+        }, { passive: false });
+
+        this.renderer.domElement.addEventListener('touchmove', (event) => {
+            event.preventDefault();
+            this.handleTouchMove(event);
+        }, { passive: false });
+
+        this.renderer.domElement.addEventListener('touchend', (event) => {
+            event.preventDefault();
+            this.handleTouchEnd(event);
+        }, { passive: false });
+
+        // Prevent context menu on long press
+        this.renderer.domElement.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+        });
+
+        // Resize event with viewport optimizations
+        window.addEventListener('resize', () => {
+            const newViewportWidth = window.innerWidth;
+            const newViewportHeight = window.innerHeight;
             
-            const mouse = new THREE.Vector2();
+            this.camera.aspect = newViewportWidth / newViewportHeight;
+            this.camera.updateProjectionMatrix();
+            this.renderer.setSize(newViewportWidth, newViewportHeight);
+            this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        });
+
+        // Orientation change event for mobile
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                const newViewportWidth = window.innerWidth;
+                const newViewportHeight = window.innerHeight;
+                
+                this.camera.aspect = newViewportWidth / newViewportHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(newViewportWidth, newViewportHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            }, 100); // Small delay to ensure orientation change is complete
+        });
+    }
+
+    handlePointerEvent(event) {
+        if (this.gameState !== 'playing') return;
+        
+        const mouse = new THREE.Vector2();
+        
+        // Handle both mouse and touch events
+        if (event.clientX !== undefined) {
+            // Mouse event
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        } else {
+            // Touch event
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        }
 
-            const raycaster = new THREE.Raycaster();
-            raycaster.setFromCamera(mouse, this.camera);
+        const raycaster = new THREE.Raycaster();
+        raycaster.setFromCamera(mouse, this.camera);
 
-            const intersects = raycaster.intersectObjects(this.cells);
+        const intersects = raycaster.intersectObjects(this.cells);
+        
+        if (intersects.length > 0) {
+            const clickedCell = intersects[0].object;
+            const row = clickedCell.userData.row;
+            const col = clickedCell.userData.col;
             
-            if (intersects.length > 0) {
-                const clickedCell = intersects[0].object;
-                const row = clickedCell.userData.row;
-                const col = clickedCell.userData.col;
+            this.handleCellClick(row, col);
+        }
+    }
+
+    handleTouchStart(event) {
+        this.touchStartTime = Date.now();
+        this.isGestureActive = true;
+        this.gestureType = null;
+        
+        if (event.touches.length === 1) {
+            // Single touch - potential tap or swipe
+            this.touchStartPosition = {
+                x: event.touches[0].clientX,
+                y: event.touches[0].clientY
+            };
+            this.isRotating = true;
+        } else if (event.touches.length === 2) {
+            // Two touches - pinch gesture
+            this.gestureType = 'pinch';
+            this.initialPinchDistance = this.getDistance(event.touches[0], event.touches[1]);
+            this.initialCameraDistance = this.camera.position.distanceTo(this.controls.target);
+        }
+    }
+
+    handleTouchMove(event) {
+        if (!this.isGestureActive) return;
+        
+        if (this.gestureType === 'pinch' && event.touches.length === 2) {
+            // Handle pinch-to-zoom
+            const currentDistance = this.getDistance(event.touches[0], event.touches[1]);
+            const scale = currentDistance / this.initialPinchDistance;
+            const newDistance = this.initialCameraDistance / scale;
+            
+            // Limit zoom range
+            const minDistance = Math.max(this.gridSize * 1.5, 5);
+            const maxDistance = Math.max(this.gridSize * 4, 20);
+            const clampedDistance = Math.max(minDistance, Math.min(maxDistance, newDistance));
+            
+            const direction = this.camera.position.clone().sub(this.controls.target).normalize();
+            this.camera.position.copy(this.controls.target).add(direction.multiplyScalar(clampedDistance));
+            this.controls.update();
+        }
+    }
+
+    handleTouchEnd(event) {
+        if (!this.isGestureActive) return;
+        
+        const touchEndTime = Date.now();
+        const touchDuration = touchEndTime - this.touchStartTime;
+        
+        if (event.touches.length === 0) {
+            // All touches ended
+            if (this.gestureType === null && this.touchStartPosition) {
+                // Single touch ended - check for tap or swipe
+                this.touchEndPosition = {
+                    x: event.changedTouches[0].clientX,
+                    y: event.changedTouches[0].clientY
+                };
                 
-                this.handleCellClick(row, col);
+                const distance = this.getDistance(this.touchStartPosition, this.touchEndPosition);
+                const minSwipeDistance = 50; // Minimum distance for swipe
+                
+                if (distance < minSwipeDistance && touchDuration < 300) {
+                    // Tap gesture - place token
+                    this.handlePointerEvent(event.changedTouches[0]);
+                } else if (distance >= minSwipeDistance) {
+                    // Swipe gesture - rotate view
+                    this.handleSwipeGesture();
+                }
             }
-        });
+            
+            this.isRotating = false;
+            this.returnToNorth();
+        }
+        
+        this.isGestureActive = false;
+        this.gestureType = null;
+    }
 
-        // Resize event
-        window.addEventListener('resize', () => {
-            this.camera.aspect = window.innerWidth / window.innerHeight;
-            this.camera.updateProjectionMatrix();
-            this.renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+    getDistance(touch1, touch2) {
+        const dx = touch1.clientX - touch2.clientX;
+        const dy = touch1.clientY - touch2.clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
 
-
+    handleSwipeGesture() {
+        const dx = this.touchEndPosition.x - this.touchStartPosition.x;
+        const dy = this.touchEndPosition.y - this.touchStartPosition.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > 50) {
+            // Determine swipe direction and apply rotation
+            const angle = Math.atan2(dy, dx);
+            const rotationAmount = Math.PI / 4; // 45 degrees
+            
+            // Apply rotation based on swipe direction
+            if (Math.abs(dx) > Math.abs(dy)) {
+                // Horizontal swipe
+                if (dx > 0) {
+                    // Swipe right - rotate clockwise
+                    this.camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), rotationAmount);
+                } else {
+                    // Swipe left - rotate counter-clockwise
+                    this.camera.position.applyAxisAngle(new THREE.Vector3(0, 1, 0), -rotationAmount);
+                }
+            } else {
+                // Vertical swipe
+                if (dy > 0) {
+                    // Swipe down - tilt down
+                    this.camera.position.applyAxisAngle(new THREE.Vector3(1, 0, 0), rotationAmount);
+                } else {
+                    // Swipe up - tilt up
+                    this.camera.position.applyAxisAngle(new THREE.Vector3(1, 0, 0), -rotationAmount);
+                }
+            }
+            
+            this.controls.update();
+        }
     }
 
     animate() {
