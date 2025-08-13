@@ -938,6 +938,12 @@ class CRTNeonGame {
         document.getElementById('createGrid').addEventListener('click', () => {
             const size = parseInt(document.getElementById('sizeSelect').value);
             this.createGrid(size);
+            
+            // Close board creation overlay after creating board
+            const boardCreationOverlay = document.getElementById('boardCreationOverlay');
+            if (boardCreationOverlay) {
+                boardCreationOverlay.style.display = 'none';
+            }
         });
 
         // Mouse click event for placing tokens
