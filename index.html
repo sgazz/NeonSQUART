@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squart - CRT Neon Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            color: #00ff00;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px #00ff00;
+        }
+
+        .crt-text {
+            text-shadow: 0 0 10px #00ff00;
+            font-weight: bold;
+        }
+
+        select, button {
+            background: #000;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select:hover, button:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        #gridSize {
+            margin-bottom: 15px;
+        }
+
+        .neon-glow {
+            box-shadow: 
+                0 0 5px #00ff00,
+                0 0 10px #00ff00,
+                0 0 15px #00ff00,
+                0 0 20px #00ff00;
+        }
+
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            padding: 15px;
+            max-width: 300px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="ui">
+            <h2 class="crt-text">Squart</h2>
+            <div id="gridSize">
+                <label for="sizeSelect" class="crt-text">Board Size:</label><br>
+                <select id="sizeSelect">
+                    <option value="5">5 x 5</option>
+                    <option value="6">6 x 6</option>
+                    <option value="7">7 x 7</option>
+                    <option value="8">8 x 8</option>
+                    <option value="9">9 x 9</option>
+                    <option value="10">10 x 10</option>
+                    <option value="12">12 x 12</option>
+                    <option value="15">15 x 15</option>
+                    <option value="20">20 x 20</option>
+                </select>
+                <button id="createGrid" class="neon-glow">Create Board</button>
+                <div id="boardInfo" class="crt-text" style="margin-top: 10px; font-size: 12px;"></div>
+            </div>
+        </div>
+
+        <div id="instructions">
+            <h3 class="crt-text">Controls:</h3>
+            <p>• Click "Create Board" to generate a new board</p>
+            <p>• Rotate camera: Left click + drag</p>
+            <p>• Zoom: Mouse wheel</p>
+            <p>• Pan camera: Right click + drag</p>
+            <br>
+            <h3 class="crt-text">Game Info:</h3>
+            <p>• Green cells: Active/playable</p>
+            <p>• Gray cells: Inactive/blocked (17-19%)</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
