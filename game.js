@@ -472,7 +472,7 @@ class CRTNeonGame {
         this.availableMoves = [];
         
         if (this.currentPlayer === 'blue') {
-            // Blue player - horizontal moves
+            // Blue player - horizontal moves (clicked cell is LEFT part)
             for (let row = 0; row < this.gridSize; row++) {
                 for (let col = 0; col < this.gridSize - 1; col++) {
                     if (this.canPlaceHorizontalToken(row, col)) {
@@ -481,7 +481,7 @@ class CRTNeonGame {
                 }
             }
         } else {
-            // Red player - vertical moves
+            // Red player - vertical moves (clicked cell is TOP part)
             for (let row = 0; row < this.gridSize - 1; row++) {
                 for (let col = 0; col < this.gridSize; col++) {
                     if (this.canPlaceVerticalToken(row, col)) {
@@ -755,16 +755,14 @@ class CRTNeonGame {
             return;
         }
         
-        // Find available move for this cell
+        // Find available move for this cell based on new placement rules
         const availableMove = this.availableMoves.find(move => {
             if (this.currentPlayer === 'blue') {
-                // Blue player - check if this cell is part of a horizontal move
-                return (move.row === row && move.col === col) || 
-                       (move.row === row && move.col === col - 1);
+                // Blue player (horizontal) - clicked cell is LEFT part of token
+                return (move.row === row && move.col === col);
             } else {
-                // Red player - check if this cell is part of a vertical move
-                return (move.row === row && move.col === col) || 
-                       (move.row === row - 1 && move.col === col);
+                // Red player (vertical) - clicked cell is TOP part of token
+                return (move.row === row && move.col === col);
             }
         });
         
