@@ -87,17 +87,25 @@
         <div id="ui">
             <h2 class="crt-text">Squart</h2>
             <div id="gridSize">
-                <label for="sizeSelect" class="crt-text">Board Size:</label><br>
+                <label for="sizeSelect" class="crt-text">Board Shape:</label><br>
+                <select id="shapeSelect">
+                    <option value="square">Square</option>
+                    <option value="rectangle">Rectangle</option>
+                    <option value="triangle">Triangle</option>
+                    <option value="diamond">Diamond</option>
+                    <option value="circle">Circle</option>
+                    <option value="hexagon">Hexagon</option>
+                    <option value="star">Star</option>
+                    <option value="asymmetric">Asymmetric</option>
+                    <option value="random">Random Shape</option>
+                </select>
+                <br>
+                <label for="sizeSelect" class="crt-text">Size:</label><br>
                 <select id="sizeSelect">
-                    <option value="5">5 x 5</option>
-                    <option value="6">6 x 6</option>
-                    <option value="7">7 x 7</option>
-                    <option value="8">8 x 8</option>
-                    <option value="9">9 x 9</option>
-                    <option value="10">10 x 10</option>
-                    <option value="12">12 x 12</option>
-                    <option value="15">15 x 15</option>
-                    <option value="20">20 x 20</option>
+                    <option value="5">Small (5-7)</option>
+                    <option value="8">Medium (8-10)</option>
+                    <option value="12">Large (12-15)</option>
+                    <option value="20">Extra Large (20+)</option>
                 </select>
                 <button id="createGrid" class="neon-glow">Create Board</button>
                 <div id="boardInfo" class="crt-text" style="margin-top: 10px; font-size: 12px;"></div>
@@ -114,6 +122,8 @@
             <h3 class="crt-text">Game Info:</h3>
             <p>• Green cells: Active/playable</p>
             <p>• Gray cells: Inactive/blocked (17-19%)</p>
+            <p>• Choose different board shapes</p>
+            <p>• Random shape for surprise!</p>
         </div>
     </div>
 

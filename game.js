@@ -11,6 +11,8 @@ class CRTNeonGame {
         this.cellSpacing = 0.1;
         this.cells = []; // Array to store cell objects
         this.inactiveCells = []; // Array to store inactive cell positions
+        this.boardShape = 'square'; // Current board shape
+        this.validPositions = []; // Valid positions for current shape
         
         this.init();
         this.setupEventListeners();
@@ -83,8 +85,12 @@ class CRTNeonGame {
         this.gridSize = size;
         this.cells = [];
         this.inactiveCells = [];
+        this.boardShape = document.getElementById('shapeSelect').value;
 
-        // Generate inactive cells (17-19% of total cells)
+        // Generate valid positions for the selected shape
+        this.generateValidPositions();
+
+        // Generate inactive cells (17-19% of valid cells)
         this.generateInactiveCells();
 
         // Prilagodi veličinu ćelija na osnovu veličine table
@@ -129,38 +135,43 @@ class CRTNeonGame {
             shininess: 100
         });
 
-        // Create cells
+        // Create cells only for valid positions
         for (let row = 0; row < size; row++) {
             for (let col = 0; col < size; col++) {
-                const x = startX + col * (this.cellSize + this.cellSpacing);
-                const z = startZ + row * (this.cellSize + this.cellSpacing);
-                const isInactive = this.isCellInactive(row, col);
+                // Check if this position is valid for the current shape
+                const isValidPosition = this.validPositions.some(pos => pos.row === row && pos.col === col);
+                
+                if (isValidPosition) {
+                    const x = startX + col * (this.cellSize + this.cellSpacing);
+                    const z = startZ + row * (this.cellSize + this.cellSpacing);
+                    const isInactive = this.isCellInactive(row, col);
 
-                // Main cell
-                const cellGeometry = new THREE.BoxGeometry(this.cellSize, 0.1, this.cellSize);
-                const cellMaterial = isInactive ? inactiveCellMaterial : activeCellMaterial;
-                const cell = new THREE.Mesh(cellGeometry, cellMaterial);
-                cell.position.set(x, 0, z);
-                cell.castShadow = true;
-                cell.receiveShadow = true;
-                cell.userData = { row, col, isInactive };
-                this.gridGroup.add(cell);
-                this.cells.push(cell);
+                    // Main cell
+                    const cellGeometry = new THREE.BoxGeometry(this.cellSize, 0.1, this.cellSize);
+                    const cellMaterial = isInactive ? inactiveCellMaterial : activeCellMaterial;
+                    const cell = new THREE.Mesh(cellGeometry, cellMaterial);
+                    cell.position.set(x, 0, z);
+                    cell.castShadow = true;
+                    cell.receiveShadow = true;
+                    cell.userData = { row, col, isInactive };
+                    this.gridGroup.add(cell);
+                    this.cells.push(cell);
 
-                // Neon border
-                const borderGeometry = new THREE.BoxGeometry(
-                    this.cellSize + 0.02, 
-                    0.12, 
-                    this.cellSize + 0.02
-                );
-                const borderMaterial = isInactive ? inactiveBorderMaterial : activeBorderMaterial;
-                const border = new THREE.Mesh(borderGeometry, borderMaterial);
-                border.position.set(x, 0, z);
-                this.gridGroup.add(border);
+                    // Neon border
+                    const borderGeometry = new THREE.BoxGeometry(
+                        this.cellSize + 0.02, 
+                        0.12, 
+                        this.cellSize + 0.02
+                    );
+                    const borderMaterial = isInactive ? inactiveBorderMaterial : activeBorderMaterial;
+                    const border = new THREE.Mesh(borderGeometry, borderMaterial);
+                    border.position.set(x, 0, z);
+                    this.gridGroup.add(border);
 
-                // Add neon effect only for active cells
-                if (!isInactive) {
-                    this.addNeonEffect(cell, x, z);
+                    // Add neon effect only for active cells
+                    if (!isInactive) {
+                        this.addNeonEffect(cell, x, z);
+                    }
                 }
             }
         }
@@ -174,24 +185,236 @@ class CRTNeonGame {
         this.adjustCamera();
     }
 
-    generateInactiveCells() {
-        const totalCells = this.gridSize * this.gridSize;
-        const inactivePercentage = Math.random() * 0.02 + 0.17; // 17-19%
-        const inactiveCount = Math.floor(totalCells * inactivePercentage);
+    generateValidPositions() {
+        this.validPositions = [];
+        const center = Math.floor(this.gridSize / 2);
         
-        // Create array of all possible positions
-        const allPositions = [];
-        for (let row = 0; row < this.gridSize; row++) {
-            for (let col = 0; col < this.gridSize; col++) {
-                allPositions.push({ row, col });
+        switch (this.boardShape) {
+            case 'square':
+                // Standard square - all positions
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        this.validPositions.push({ row, col });
+                    }
+                }
+                break;
+                
+            case 'rectangle':
+                // Rectangle - wider than tall
+                const width = this.gridSize;
+                const height = Math.floor(this.gridSize * 0.7);
+                const startRow = Math.floor((this.gridSize - height) / 2);
+                for (let row = startRow; row < startRow + height; row++) {
+                    for (let col = 0; col < width; col++) {
+                        this.validPositions.push({ row, col });
+                    }
+                }
+                break;
+                
+            case 'triangle':
+                // Triangle pointing down
+                for (let row = 0; row < this.gridSize; row++) {
+                    const rowWidth = this.gridSize - row;
+                    const startCol = Math.floor(row / 2);
+                    for (let col = startCol; col < startCol + rowWidth; col++) {
+                        if (col < this.gridSize) {
+                            this.validPositions.push({ row, col });
+                        }
+                    }
+                }
+                break;
+                
+            case 'diamond':
+                // Diamond shape
+                for (let row = 0; row < this.gridSize; row++) {
+                    const distanceFromCenter = Math.abs(row - center);
+                    const rowWidth = this.gridSize - 2 * distanceFromCenter;
+                    const startCol = center - Math.floor(rowWidth / 2);
+                    for (let col = startCol; col < startCol + rowWidth; col++) {
+                        if (col >= 0 && col < this.gridSize) {
+                            this.validPositions.push({ row, col });
+                        }
+                    }
+                }
+                break;
+                
+
+                
+            case 'circle':
+                // Circle shape
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        const distance = Math.sqrt((row - center) ** 2 + (col - center) ** 2);
+                        if (distance <= center) {
+                            this.validPositions.push({ row, col });
+                        }
+                    }
+                }
+                break;
+                
+            case 'hexagon':
+                // Hexagon shape
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        const distance = Math.abs(row - center) + Math.abs(col - center);
+                        if (distance <= center + 1) {
+                            this.validPositions.push({ row, col });
+                        }
+                    }
+                }
+                break;
+                
+            case 'star':
+                // Star shape (simplified)
+                for (let row = 0; row < this.gridSize; row++) {
+                    for (let col = 0; col < this.gridSize; col++) {
+                        const distance = Math.sqrt((row - center) ** 2 + (col - center) ** 2);
+                        const angle = Math.atan2(row - center, col - center);
+                        const starRadius = center * (0.3 + 0.7 * Math.abs(Math.sin(angle * 5)));
+                        if (distance <= starRadius) {
+                            this.validPositions.push({ row, col });
+                        }
+                    }
+                }
+                break;
+                
+            case 'asymmetric':
+                // Completely asymmetric shape with random edges
+                this.generateAsymmetricShape();
+                break;
+                
+            case 'random':
+                // Random shape - irregular pattern
+                const shapes = ['triangle', 'diamond', 'circle', 'hexagon', 'star', 'asymmetric'];
+                const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+                this.boardShape = randomShape;
+                this.generateValidPositions();
+                return;
+        }
+    }
+
+    generateAsymmetricShape() {
+        // Create a completely asymmetric shape using cellular automata
+        const grid = [];
+        const size = this.gridSize;
+        
+        // Initialize grid with random values
+        for (let row = 0; row < size; row++) {
+            grid[row] = [];
+            for (let col = 0; col < size; col++) {
+                // Start with some random cells in the center area
+                const distanceFromCenter = Math.sqrt((row - size/2) ** 2 + (col - size/2) ** 2);
+                const centerArea = size * 0.4;
+                if (distanceFromCenter < centerArea) {
+                    grid[row][col] = Math.random() > 0.3; // 70% chance to be active in center
+                } else {
+                    grid[row][col] = Math.random() > 0.8; // 20% chance to be active outside
+                }
             }
         }
         
+        // Apply cellular automata rules for a few iterations to create organic shape
+        for (let iteration = 0; iteration < 3; iteration++) {
+            const newGrid = [];
+            for (let row = 0; row < size; row++) {
+                newGrid[row] = [];
+                for (let col = 0; col < size; col++) {
+                    let neighbors = 0;
+                    
+                    // Count live neighbors
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            if (dr === 0 && dc === 0) continue;
+                            const nr = row + dr;
+                            const nc = col + dc;
+                            if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                                if (grid[nr][nc]) neighbors++;
+                            }
+                        }
+                    }
+                    
+                    // Apply rules
+                    if (grid[row][col]) {
+                        // Live cell survives with 2-3 neighbors
+                        newGrid[row][col] = neighbors >= 2 && neighbors <= 3;
+                    } else {
+                        // Dead cell becomes alive with exactly 3 neighbors
+                        newGrid[row][col] = neighbors === 3;
+                    }
+                }
+            }
+            
+            // Copy new grid back
+            for (let row = 0; row < size; row++) {
+                for (let col = 0; col < size; col++) {
+                    grid[row][col] = newGrid[row][col];
+                }
+            }
+        }
+        
+        // Add some random noise for more asymmetry
+        for (let row = 0; row < size; row++) {
+            for (let col = 0; col < size; col++) {
+                if (Math.random() < 0.1) { // 10% chance to flip
+                    grid[row][col] = !grid[row][col];
+                }
+            }
+        }
+        
+        // Ensure connectivity by filling small gaps
+        for (let row = 1; row < size - 1; row++) {
+            for (let col = 1; col < size - 1; col++) {
+                if (!grid[row][col]) {
+                    let liveNeighbors = 0;
+                    for (let dr = -1; dr <= 1; dr++) {
+                        for (let dc = -1; dc <= 1; dc++) {
+                            if (grid[row + dr][col + dc]) liveNeighbors++;
+                        }
+                    }
+                    // Fill isolated cells surrounded by live cells
+                    if (liveNeighbors >= 6) {
+                        grid[row][col] = true;
+                    }
+                }
+            }
+        }
+        
+        // Convert to valid positions
+        for (let row = 0; row < size; row++) {
+            for (let col = 0; col < size; col++) {
+                if (grid[row][col]) {
+                    this.validPositions.push({ row, col });
+                }
+            }
+        }
+        
+        // Ensure minimum size
+        if (this.validPositions.length < size * 2) {
+            // If too small, add some random cells
+            for (let i = 0; i < size; i++) {
+                const row = Math.floor(Math.random() * size);
+                const col = Math.floor(Math.random() * size);
+                const pos = { row, col };
+                if (!this.validPositions.some(p => p.row === row && p.col === col)) {
+                    this.validPositions.push(pos);
+                }
+            }
+        }
+    }
+
+    generateInactiveCells() {
+        const totalCells = this.validPositions.length;
+        const inactivePercentage = Math.random() * 0.02 + 0.17; // 17-19%
+        const inactiveCount = Math.floor(totalCells * inactivePercentage);
+        
+        // Create array of valid positions
+        const availablePositions = [...this.validPositions];
+        
         // Randomly select positions for inactive cells
         for (let i = 0; i < inactiveCount; i++) {
-            if (allPositions.length > 0) {
-                const randomIndex = Math.floor(Math.random() * allPositions.length);
-                const position = allPositions.splice(randomIndex, 1)[0];
+            if (availablePositions.length > 0) {
+                const randomIndex = Math.floor(Math.random() * availablePositions.length);
+                const position = availablePositions.splice(randomIndex, 1)[0];
                 this.inactiveCells.push(position);
             }
         }
@@ -205,7 +428,9 @@ class CRTNeonGame {
         if (boardInfo) {
             const activeCount = totalCells - inactiveCount;
             const percentage = (inactiveCount/totalCells*100).toFixed(1);
+            const shapeName = this.boardShape.charAt(0).toUpperCase() + this.boardShape.slice(1);
             boardInfo.innerHTML = `
+                Shape: ${shapeName}<br>
                 Active cells: ${activeCount}<br>
                 Inactive cells: ${inactiveCount} (${percentage}%)
             `;
