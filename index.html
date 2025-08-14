@@ -601,6 +601,50 @@
             box-shadow: 0 0 20px #00ff00;
         }
 
+        /* AI Thinking Animation */
+        .ai-thinking {
+            animation: aiThinkingPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes aiThinkingPulse {
+            0%, 100% { 
+                opacity: 1; 
+                text-shadow: 0 0 10px currentColor;
+            }
+            50% { 
+                opacity: 0.5; 
+                text-shadow: 0 0 20px currentColor, 0 0 30px currentColor;
+            }
+        }
+
+        .ai-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff00;
+            margin-left: 8px;
+            animation: aiThinkingPulse 1.5s ease-in-out infinite;
+        }
+
+        /* Game Over Animation */
+        .game-over-status {
+            animation: gameOverPulse 0.8s ease-in-out infinite;
+            color: #ff6600 !important;
+            text-shadow: 0 0 15px #ff6600;
+        }
+
+        @keyframes gameOverPulse {
+            0%, 100% { 
+                opacity: 1; 
+                text-shadow: 0 0 15px #ff6600;
+            }
+            50% { 
+                opacity: 0.7; 
+                text-shadow: 0 0 25px #ff6600, 0 0 35px #ff6600;
+            }
+        }
+
         /* Mobile Responsive CSS */
         @media (max-width: 768px) {
             #ui {
@@ -1064,6 +1108,31 @@
                             <option value="20">XL</option>
                         </select>
                     </div>
+                    <div class="option-group">
+                        <label for="gameModeSelect" class="crt-text">Game Mode:</label>
+                        <select id="gameModeSelect">
+                            <option value="pvp">Player vs Player</option>
+                            <option value="pve">Player vs AI</option>
+                            <option value="evp">AI vs Player</option>
+                            <option value="eve">AI vs AI</option>
+                        </select>
+                    </div>
+                    <div class="option-group" id="aiOptions" style="display: none;">
+                        <label for="blueAISelect" class="crt-text">AI Level:</label>
+                        <select id="blueAISelect">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                    <div class="option-group" id="aiOptions2" style="display: none;">
+                        <label for="redAISelect" class="crt-text">AI Level:</label>
+                        <select id="redAISelect">
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="board-actions">
                     <button id="createGrid" class="neon-glow">Create Board</button>
@@ -1099,7 +1168,13 @@
                 <p><strong>Game Rules:</strong><br>
                 • Green cells = playable<br>
                 • Gray cells = blocked<br>
-                • Last player to place token wins!</p>
+                • Last player to place token wins!<br>
+                • Final move pulses for 4.5 seconds before winner screen</p>
+                
+                <p><strong>AI Modes:</strong><br>
+                • <strong>PvAI:</strong> You play first (Electric Violet)<br>
+                • <strong>AIvP:</strong> AI plays first (Electric Violet)<br>
+                • <strong>AIvAI:</strong> Watch AI battle</p>
                 <button class="close-instructions" onclick="hideInstructions()">×</button>
             </div>
         </div>
@@ -1117,6 +1192,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="ai.js"></script>
     <script src="game.js"></script>
     
     <script>
@@ -1141,6 +1217,43 @@
                 boardCreationOverlay.style.display = 'flex';
                 gameInfoOverlay.style.display = 'none'; // Close game info when opening board creation
             });
+
+            // AI options visibility logic
+            const gameModeSelect = document.getElementById('gameModeSelect');
+            const aiOptions = document.getElementById('aiOptions');
+            const aiOptions2 = document.getElementById('aiOptions2');
+
+            function updateAIOptions() {
+                const gameMode = gameModeSelect.value;
+                const blueAILabel = document.querySelector('#aiOptions label');
+                const redAILabel = document.querySelector('#aiOptions2 label');
+                
+                switch(gameMode) {
+                    case 'pvp':
+                        aiOptions.style.display = 'none';
+                        aiOptions2.style.display = 'none';
+                        break;
+                    case 'pve':
+                        aiOptions.style.display = 'block';
+                        aiOptions2.style.display = 'none';
+                        blueAILabel.textContent = 'AI Level (Red):';
+                        break;
+                    case 'evp':
+                        aiOptions.style.display = 'none';
+                        aiOptions2.style.display = 'block';
+                        redAILabel.textContent = 'AI Level (Blue):';
+                        break;
+                    case 'eve':
+                        aiOptions.style.display = 'block';
+                        aiOptions2.style.display = 'block';
+                        blueAILabel.textContent = 'Blue AI Level:';
+                        redAILabel.textContent = 'Red AI Level:';
+                        break;
+                }
+            }
+
+            gameModeSelect.addEventListener('change', updateAIOptions);
+            updateAIOptions(); // Initial state
         });
 
         function hideInstructions() {

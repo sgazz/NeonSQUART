@@ -9,6 +9,9 @@ Interactive 3D game built with Three.js featuring CRT monitor style and futurist
 - **3D Interaction**: Camera rotation, zoom and pan
 - **Neon Effects**: Animated neon elements with pulsing light
 - **Scanlines Effect**: Simulation of old CRT monitors
+- **AI Opponents**: Three difficulty levels (Easy, Medium, Hard)
+- **Multiple Game Modes**: PvP, PvAI, AIvP, AIvAI
+- **AI Thinking Animation**: Visual feedback during AI turns
 
 ## How to Run
 
@@ -24,6 +27,19 @@ Interactive 3D game built with Three.js featuring CRT monitor style and futurist
 - **Camera Pan**: Right click + drag mouse
 - **Create New Board**: Click "Create Board" button
 
+## AI Game Modes
+
+- **PvP (Player vs Player)**: Classic two-player mode
+- **PvAI (Player vs AI)**: You play as Electric Violet (blue), AI plays as Shocking Pink (red)
+- **AIvP (AI vs Player)**: AI plays as Electric Violet (blue), you play as Shocking Pink (red)
+- **AIvAI (AI vs AI)**: Watch two AI players compete
+
+## AI Difficulty Levels
+
+- **Easy**: Random moves, quick thinking (200-700ms)
+- **Medium**: Greedy algorithm, strategic positioning (500-1300ms)
+- **Hard**: Advanced AI with transposition table, iterative deepening (5-8 moves ahead), move ordering, and sophisticated evaluation (2000-3000ms)
+
 ## Technologies
 
 - **Three.js**: 3D graphics library
@@ -35,16 +51,18 @@ Interactive 3D game built with Three.js featuring CRT monitor style and futurist
 ```
 ├── index.html          # Main HTML file
 ├── game.js            # Three.js game logic
+├── ai.js              # AI player logic and algorithms
 └── README.md          # This documentation
 ```
 
 ## Future Features
 
-- Adding players and moves
 - Different types of games on the board
 - Additional neon effects and animations
 - Sound effects
 - Multiplayer support
+- AI tournament mode
+- Advanced AI strategies
 
 ## Notes
 

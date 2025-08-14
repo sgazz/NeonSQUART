@@ -22,6 +22,17 @@ class CRTNeonGame {
         this.gameBoard = []; // 2D array representing the game board
         this.availableMoves = []; // Available moves for current player
         
+        // AI state
+        this.gameMode = 'pvp'; // 'pvp', 'pve', 'evp', 'eve'
+        this.blueAI = null;
+        this.redAI = null;
+        this.isAITurn = false;
+        this.aiThinking = false;
+        
+        // Game timing constants
+        this.FINAL_MOVE_PULSE_DURATION = 4.5; // seconds
+        this.WINNER_OVERLAY_DELAY = 2.0; // seconds
+        
         // Gesture tracking
         this.touchStartTime = 0;
         this.touchStartPosition = { x: 0, y: 0 };
@@ -508,6 +519,144 @@ class CRTNeonGame {
         this.redScore = 0;
         this.calculateAvailableMoves();
         this.updateGameUI();
+        
+        // Initialize AI based on game mode
+        this.initializeAI();
+        
+        // Start AI turn if needed
+        this.checkAITurn();
+    }
+
+    initializeAI() {
+        const gameMode = document.getElementById('gameModeSelect').value;
+        this.gameMode = gameMode;
+        
+        // Clear existing AI
+        this.blueAI = null;
+        this.redAI = null;
+        
+        switch(gameMode) {
+            case 'pve': // Player vs AI (Player is blue, AI is red)
+                const redAILevel = document.getElementById('blueAISelect').value;
+                this.redAI = new AIPlayer(redAILevel, 'red');
+                break;
+            case 'evp': // AI vs Player (AI is blue, Player is red)
+                const blueAILevel = document.getElementById('redAISelect').value;
+                this.blueAI = new AIPlayer(blueAILevel, 'blue');
+                break;
+            case 'eve': // AI vs AI
+                const blueLevel = document.getElementById('blueAISelect').value;
+                const redLevel = document.getElementById('redAISelect').value;
+                this.blueAI = new AIPlayer(blueLevel, 'blue');
+                this.redAI = new AIPlayer(redLevel, 'red');
+                break;
+        }
+    }
+
+    checkAITurn() {
+        if (this.gameState !== 'playing') return;
+        
+        const currentPlayerAI = this.currentPlayer === 'blue' ? this.blueAI : this.redAI;
+        
+        if (currentPlayerAI && !this.aiThinking) {
+            this.isAITurn = true;
+            this.aiThinking = true;
+            this.updateGameUI();
+            
+            // Add thinking delay
+            setTimeout(() => {
+                this.makeAIMove(currentPlayerAI);
+            }, currentPlayerAI.thinkingTime);
+        } else {
+            this.isAITurn = false;
+        }
+    }
+
+    makeAIMove(ai) {
+        if (this.gameState !== 'playing') return;
+        
+        const move = ai.getMove(this.gameBoard, this.availableMoves, this.gridSize);
+        
+        if (move) {
+            this.placeToken(move.row, move.col, move.direction);
+        }
+        
+        this.aiThinking = false;
+        this.isAITurn = false;
+        
+        // Check if next turn is AI
+        setTimeout(() => {
+            this.checkAITurn();
+        }, 100);
+    }
+
+    highlightFinalMove() {
+        // Find the last placed tokens and add a pulsing glow effect
+        const lastPlayer = this.currentPlayer === 'blue' ? 'red' : 'blue';
+        const lastTokens = [];
+        
+        // Find all tokens of the last player
+        for (let row = 0; row < this.gridSize; row++) {
+            for (let col = 0; col < this.gridSize; col++) {
+                if (this.gameBoard[row][col] === lastPlayer) {
+                    const cell = this.cells.find(c => c.userData.row === row && c.userData.col === col);
+                    if (cell) {
+                        lastTokens.push(cell);
+                    }
+                }
+            }
+        }
+        
+        // Add pulsing animation to the last tokens
+        lastTokens.forEach(cell => {
+            this.addPulsingEffect(cell);
+        });
+    }
+
+    addPulsingEffect(cell) {
+        // Create a pulsing glow effect
+        const glowGeometry = new THREE.BoxGeometry(
+            this.cellSize + 0.1, 
+            0.2, 
+            this.cellSize + 0.1
+        );
+        
+        const glowMaterial = new THREE.MeshBasicMaterial({
+            color: 0xffff00, // Yellow glow
+            transparent: true,
+            opacity: 0.8
+        });
+        
+        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+        glow.position.copy(cell.position);
+        glow.position.y += 0.1;
+        
+        this.gridGroup.add(glow);
+        
+        // Animate the glow for limited time
+        let time = 0;
+        const maxTime = this.FINAL_MOVE_PULSE_DURATION; // Use constant for duration
+        const startTime = Date.now();
+        
+        const animate = () => {
+            const elapsed = (Date.now() - startTime) / 1000; // Convert to seconds
+            
+            if (elapsed >= maxTime) {
+                // Remove glow after pulse duration
+                this.gridGroup.remove(glow);
+                glow.material.dispose();
+                glow.geometry.dispose();
+                return;
+            }
+            
+            time += 0.1;
+            const pulse = 0.3 + 0.7 * Math.sin(time * 4);
+            glow.material.opacity = pulse;
+            glow.scale.setScalar(1 + pulse * 0.2);
+            
+            requestAnimationFrame(animate);
+        };
+        animate();
     }
 
     calculateAvailableMoves() {
@@ -569,7 +718,21 @@ class CRTNeonGame {
         if (this.availableMoves.length === 0) {
             // The player who just placed the token is the winner
             const winner = this.currentPlayer === 'blue' ? 'red' : 'blue';
-            this.endGame(winner);
+            
+            // Show "Game Over" status immediately
+            this.gameState = 'gameOver';
+            this.updateGameUI();
+            
+            // Highlight the final move with a pulsing effect
+            this.highlightFinalMove();
+            
+            // Add delay before showing winner overlay so players can see the final move
+            setTimeout(() => {
+                this.endGame(winner);
+            }, this.WINNER_OVERLAY_DELAY * 1000); // Use constant for delay
+        } else {
+            // Check if next turn is AI
+            this.checkAITurn();
         }
         
         this.updateGameUI();
@@ -635,9 +798,7 @@ class CRTNeonGame {
     }
 
     endGame(winner) {
-        this.gameState = 'gameOver';
         this.winner = winner;
-        this.updateGameUI();
         this.showWinnerOverlay(winner);
         console.log(`Game Over! Winner: ${winner}, Blue: ${this.blueScore}, Red: ${this.redScore}`);
     }
@@ -686,12 +847,32 @@ class CRTNeonGame {
     updateGameUI() {
         const gameInfo = document.getElementById('gameInfo');
         if (gameInfo) {
+            let playerName = this.currentPlayer === 'blue' ? 'ELECTRIC VIOLET' : 'SHOCKING PINK';
+            let playerColor = this.currentPlayer === 'blue' ? '#6414FE' : '#FE14AE';
+            
+            // Check if current player is AI
+            const currentPlayerAI = this.currentPlayer === 'blue' ? this.blueAI : this.redAI;
+            if (currentPlayerAI) {
+                playerName += ` (AI ${currentPlayerAI.level.toUpperCase()})`;
+            }
+            
+            // Add thinking indicator
+            let statusText = this.gameState.toUpperCase();
+            let statusClass = '';
+            if (this.aiThinking) {
+                statusText = 'AI THINKING...';
+                playerName += '<span class="ai-indicator"></span>';
+            } else if (this.gameState === 'gameOver') {
+                statusClass = 'game-over-status';
+            }
+            
             let html = `
                 <div class="crt-text">
-                    <p><strong>Status:</strong> ${this.gameState.toUpperCase()}</p>
-                    <p><strong>Player:</strong> <span style="color: ${this.currentPlayer === 'blue' ? '#6414FE' : '#FE14AE'}">${this.currentPlayer === 'blue' ? 'ELECTRIC VIOLET' : 'SHOCKING PINK'}</span></p>
+                    <p><strong>Status:</strong> <span class="${statusClass}">${statusText}</span></p>
+                    <p><strong>Player:</strong> <span style="color: ${playerColor}">${playerName}</span></p>
                     <p><strong>Score:</strong> <span style="color: #6414FE;">${this.blueScore}</span> - <span style="color: #FE14AE;">${this.redScore}</span></p>
                     <p><strong>Moves:</strong> ${this.availableMoves.length}</p>
+                    <p><strong>Mode:</strong> ${this.gameMode.toUpperCase()}</p>
                 </div>
             `;
             
@@ -794,6 +975,11 @@ class CRTNeonGame {
 
     handleCellClick(row, col) {
         if (this.gameBoard[row][col] !== 'empty') {
+            return;
+        }
+        
+        // Block clicks during AI turn
+        if (this.isAITurn || this.aiThinking) {
             return;
         }
         
@@ -937,6 +1123,11 @@ class CRTNeonGame {
         // Event listener for creating new board
         document.getElementById('createGrid').addEventListener('click', () => {
             const size = parseInt(document.getElementById('sizeSelect').value);
+            const gameMode = document.getElementById('gameModeSelect').value;
+            
+            // Update game mode before creating grid
+            this.gameMode = gameMode;
+            
             this.createGrid(size);
             
             // Close board creation overlay after creating board
