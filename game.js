@@ -33,6 +33,9 @@ class CRTNeonGame {
         this.FINAL_MOVE_PULSE_DURATION = 4.5; // seconds
         this.WINNER_OVERLAY_DELAY = 2.0; // seconds
         
+        // Audio manager
+        this.audioManager = null;
+        
         // Gesture tracking
         this.touchStartTime = 0;
         this.touchStartPosition = { x: 0, y: 0 };
@@ -269,12 +272,32 @@ class CRTNeonGame {
 
         this.scene.add(this.gridGroup);
 
+        // Initialize audio manager
+        this.initAudioManager();
+
         // Prilagodi kameru
         this.adjustCamera();
         
         // Initialize game board and start game
         this.initializeGameBoard();
         this.startGame();
+    }
+
+    initAudioManager() {
+        try {
+            this.audioManager = new AudioManager();
+            // Make audio manager globally accessible for UI controls
+            window.game = this;
+            
+            // Start ambient music
+            setTimeout(() => {
+                if (this.audioManager) {
+                    this.audioManager.playMusic('ambient', true);
+                }
+            }, 1000);
+        } catch (error) {
+            console.warn('Could not initialize audio manager:', error);
+        }
     }
 
     generateValidPositions() {
@@ -563,6 +586,11 @@ class CRTNeonGame {
             this.aiThinking = true;
             this.updateGameUI();
             
+            // Play AI thinking sound
+            if (this.audioManager) {
+                this.audioManager.playSound('aiThinking');
+            }
+            
             // Add thinking delay
             setTimeout(() => {
                 this.makeAIMove(currentPlayerAI);
@@ -710,6 +738,11 @@ class CRTNeonGame {
             this.updateCellVisual(row + 1, col, 'red');
         }
         
+        // Play token placement sound
+        if (this.audioManager) {
+            this.audioManager.playSound('tokenPlace');
+        }
+        
         // Switch players
         this.currentPlayer = this.currentPlayer === 'blue' ? 'red' : 'blue';
         this.calculateAvailableMoves();
@@ -817,6 +850,12 @@ class CRTNeonGame {
         
         overlay.style.display = 'flex';
         this.createParticles(winnerColor);
+        
+        // Play winner sound and music
+        if (this.audioManager) {
+            this.audioManager.playSound('winner');
+            this.audioManager.playMusic('victory', false);
+        }
         
         // Add dramatic entrance animation
         winnerText.style.transform = 'scale(0)';
@@ -1125,6 +1164,11 @@ class CRTNeonGame {
             const size = parseInt(document.getElementById('sizeSelect').value);
             const gameMode = document.getElementById('gameModeSelect').value;
             
+            // Play UI click sound
+            if (this.audioManager) {
+                this.audioManager.playSound('uiClick');
+            }
+            
             // Update game mode before creating grid
             this.gameMode = gameMode;
             
@@ -1139,6 +1183,10 @@ class CRTNeonGame {
 
         // Mouse click event for placing tokens
         this.renderer.domElement.addEventListener('click', (event) => {
+            // Resume audio context on first interaction (mobile browsers)
+            if (this.audioManager) {
+                this.audioManager.resume();
+            }
             this.handlePointerEvent(event);
         });
 

@@ -369,6 +369,57 @@
             color: #000;
         }
 
+        .audio-button {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 100;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        .audio-button:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 25px #00ff00;
+            transform: scale(1.1);
+        }
+
+        .audio-icon {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .audio-button:hover .audio-icon {
+            color: #000;
+        }
+
+        .audio-button.muted .audio-icon {
+            color: #ff6666;
+            text-shadow: 0 0 10px #ff6666;
+        }
+
+        .audio-button.muted {
+            border-color: #ff6666;
+            box-shadow: 0 0 15px #ff6666;
+        }
+
+        .audio-button.muted:hover {
+            background: #ff6666;
+            box-shadow: 0 0 25px #ff6666;
+        }
+
         .instructions-overlay {
             position: fixed;
             top: 0;
@@ -446,6 +497,148 @@
         }
 
         @keyframes instructionsFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .audio-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .audio-content {
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid #00ff00;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 0 30px #00ff00;
+            animation: audioFadeIn 0.3s ease-out;
+        }
+
+        .audio-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group label {
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .volume-slider {
+            width: 100%;
+            height: 8px;
+            background: #333;
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00ff00;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .volume-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #00ff00;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .volume-value {
+            font-size: 12px;
+            color: #00ff00;
+            text-align: right;
+        }
+
+        .audio-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 25px;
+        }
+
+        .test-button {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
+            min-height: 44px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Courier New', monospace;
+        }
+
+        .test-button:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        .close-audio {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #00ff00;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .close-audio:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        @keyframes audioFadeIn {
             from {
                 opacity: 0;
                 transform: scale(0.8);
@@ -1147,6 +1340,10 @@
             <span class="help-icon">?</span>
         </div>
         
+        <div id="audioButton" class="audio-button">
+            <span class="audio-icon">🔊</span>
+        </div>
+        
         <div id="instructions" class="instructions-overlay">
             <div class="instructions-content">
                 <h3 class="crt-text">How to Play</h3>
@@ -1178,6 +1375,34 @@
                 <button class="close-instructions" onclick="hideInstructions()">×</button>
             </div>
         </div>
+
+        <div id="audioOverlay" class="audio-overlay">
+            <div class="audio-content">
+                <h3 class="crt-text">Audio Settings</h3>
+                <div class="audio-controls">
+                    <div class="control-group">
+                        <label for="masterVolume" class="crt-text">Master Volume:</label>
+                        <input type="range" id="masterVolume" min="0" max="100" value="70" class="volume-slider">
+                        <span id="masterVolumeValue" class="volume-value">70%</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="musicVolume" class="crt-text">Music Volume:</label>
+                        <input type="range" id="musicVolume" min="0" max="100" value="30" class="volume-slider">
+                        <span id="musicVolumeValue" class="volume-value">30%</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="sfxVolume" class="crt-text">Sound Effects:</label>
+                        <input type="range" id="sfxVolume" min="0" max="100" value="100" class="volume-slider">
+                        <span id="sfxVolumeValue" class="volume-value">100%</span>
+                    </div>
+                </div>
+                <div class="audio-actions">
+                    <button id="testSound" class="test-button">Test Sound</button>
+                    <button id="testMusic" class="test-button">Test Music</button>
+                </div>
+                <button class="close-audio" onclick="hideAudioOverlay()">×</button>
+            </div>
+        </div>
         </div>
     </div>
 
@@ -1193,6 +1418,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="ai.js"></script>
+    <script src="audio.js"></script>
     <script src="game.js"></script>
     
     <script>
@@ -1204,6 +1430,8 @@
             const gameInfoOverlay = document.getElementById('gameInfoOverlay');
             const createBoardButton = document.getElementById('createBoardButton');
             const boardCreationOverlay = document.getElementById('boardCreationOverlay');
+            const audioButton = document.getElementById('audioButton');
+            const audioOverlay = document.getElementById('audioOverlay');
             
             helpButton.addEventListener('click', function() {
                 instructions.style.display = 'flex';
@@ -1216,6 +1444,51 @@
             createBoardButton.addEventListener('click', function() {
                 boardCreationOverlay.style.display = 'flex';
                 gameInfoOverlay.style.display = 'none'; // Close game info when opening board creation
+            });
+
+            audioButton.addEventListener('click', function() {
+                audioOverlay.style.display = 'flex';
+            });
+
+            // Audio controls functionality
+            const masterVolumeSlider = document.getElementById('masterVolume');
+            const musicVolumeSlider = document.getElementById('musicVolume');
+            const sfxVolumeSlider = document.getElementById('sfxVolume');
+            const testSoundButton = document.getElementById('testSound');
+            const testMusicButton = document.getElementById('testMusic');
+
+            masterVolumeSlider.addEventListener('input', function() {
+                const value = this.value;
+                document.getElementById('masterVolumeValue').textContent = value + '%';
+                if (window.game && window.game.audioManager) {
+                    window.game.audioManager.setVolume(value / 100);
+                }
+            });
+
+            musicVolumeSlider.addEventListener('input', function() {
+                const value = this.value;
+                document.getElementById('musicVolumeValue').textContent = value + '%';
+                if (window.game && window.game.audioManager) {
+                    window.game.audioManager.setMusicVolume(value / 100);
+                }
+            });
+
+            sfxVolumeSlider.addEventListener('input', function() {
+                const value = this.value;
+                document.getElementById('sfxVolumeValue').textContent = value + '%';
+                // SFX volume is handled per sound in the game
+            });
+
+            testSoundButton.addEventListener('click', function() {
+                if (window.game && window.game.audioManager) {
+                    window.game.audioManager.playSound('uiClick');
+                }
+            });
+
+            testMusicButton.addEventListener('click', function() {
+                if (window.game && window.game.audioManager) {
+                    window.game.audioManager.playMusic('ambient', false);
+                }
             });
 
             // AI options visibility logic
@@ -1271,6 +1544,11 @@
             boardCreationOverlay.style.display = 'none';
         }
 
+        function hideAudioOverlay() {
+            const audioOverlay = document.getElementById('audioOverlay');
+            audioOverlay.style.display = 'none';
+        }
+
         // Close overlays when clicking outside
         document.addEventListener('click', function(event) {
             const instructions = document.getElementById('instructions');
@@ -1279,6 +1557,8 @@
             const gameInfoButton = document.getElementById('gameInfoButton');
             const boardCreationOverlay = document.getElementById('boardCreationOverlay');
             const createBoardButton = document.getElementById('createBoardButton');
+            const audioOverlay = document.getElementById('audioOverlay');
+            const audioButton = document.getElementById('audioButton');
             
             if (instructions.style.display === 'flex' && 
                 !instructions.contains(event.target) && 
@@ -1296,6 +1576,12 @@
                 !boardCreationOverlay.contains(event.target) && 
                 !createBoardButton.contains(event.target)) {
                 boardCreationOverlay.style.display = 'none';
+            }
+            
+            if (audioOverlay.style.display === 'flex' && 
+                !audioOverlay.contains(event.target) && 
+                !audioButton.contains(event.target)) {
+                audioOverlay.style.display = 'none';
             }
         });
     </script>
